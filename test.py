@@ -1,4 +1,5 @@
 import os
+import time
 
 from dotenv import load_dotenv
 from mistralai import Mistral
@@ -10,19 +11,14 @@ model = "mistral-small-latest"
 client = Mistral(api_key=api_key)
 
 
-
-
-
-
 # Generate prompt
 prompt_creation_instruction = """
-You are a prompt creator for a quiz game show about surving unlikely scenarios, themed around shit. You need to create a situation for the players to survive in. Be creative and feel free to go completely off the rails. Make shit and potty humor-related puns in your prompt.
-
-The prompt must only be about one specific event. Only respond with the contents of the prompt, and nothing else. Keep your response under 30 words.
+Create a scenario where the player is expected to show compassion / help others. Your response should only contain the prompt. Keep it under 30 words. End the prompt with the exact words \"What do you do?\".
 """
 
 chat_response = client.chat.complete(
     model=model,
+    temperature=0.7,
     messages = [
         {"role": "system", "content": prompt_creation_instruction},
     ]
@@ -32,19 +28,21 @@ assert chat_response.choices is not None
 assert chat_response.choices[0].message.content is not None
 prompt = chat_response.choices[0].message.content
 
+print(f"Prompt: {prompt}")
+time.sleep(5)
 
-
-# Get player strategy + generate bot strategy
-bot_strategy_instruction = f"""
+# Get player response + generate bot response
+bot_response_instruction = f"""
 You are given the following prompt: \"{prompt}\"
-What is your strategy that will maximize your chance of survival? Be creative and feel free to go completely off the rails.
-Keep your response under 50 words.
+How do you make yourself look as good as possible in front of others in this situation? Do not roleplay. Your response should only contain your specific actions.
+Respond in one paragraph without any formatting. Keep your response under 50 words.
 """
 
 chat_response = client.chat.complete(
     model=model,
+    temperature=0.7,
     messages = [
-        {"role": "system", "content": bot_strategy_instruction},
+        {"role": "system", "content": bot_response_instruction},
     ]
 )
 assert chat_response.choices is not None
@@ -54,21 +52,17 @@ bot_strategy = chat_response.choices[0].message.content
 
 # Evaluate strategies and get winner
 judge_instruction = f"""
-You are a judge for a quiz game show about surving unlikely scenarios. The winner is the player that has the highest likelihood of survival given their response.
-You will see two responses. Which one do you think is more likely to survive, and why?
-
-Format your response as follows: \"Player X wins! [EXPLANATION FOR WHY PLAYER 1'S STRATEGY IS BETTER THAN PLAYER 2'S]\"
+You are a judge for a game show about showing compassion and helping others. Given two responses, determine which player did better in the given scenario.
+Format your response as follows: \"Player X wins! [EXPLANATION FOR WHY PLAYER 1'S RESPONSE IS BETTER] [EXPLANATION FOR WHY PLAYER 2'S RESPONSE IS NOT AS GOOD]\"
 Keep your response under 100 words.
 
-The prompt is: \"{prompt}\"
+The scenario is: \"{prompt}\"
 """
 
 # prefix = ""
 
-print(f"Prompt: {prompt}")
-
-player_strategy = input("Player strategy: ")
-print(f"Bot strategy: {bot_strategy}")
+player_strategy = input("Player response: ")
+print(f"Bot response: {bot_strategy}")
 
 
 question = f"""

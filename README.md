@@ -1,2 +1,2 @@
 # One-upmanSHIT
-(giving too much of a shit is probably a bad thing)
+giving three shits is better than two
