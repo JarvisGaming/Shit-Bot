@@ -92,5 +92,3 @@ judge_response = chat_response.choices[0].message.content
 # print(chat_response.choices[0].message.content[len(prefix):])   # type: ignore
 
 print(f"Judge: {judge_response}")
-
-# Idea: OneuppsmanSHIT (giving too much of a SHIT)

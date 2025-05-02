@@ -9,7 +9,7 @@ from other.error_handling import *
 async def setup_hook():
     """This is run once when the bot starts."""
     
-    # await load_all_cogs()
+    await load_all_cogs()
     await bot.tree.sync()  # Syncs slash commands
     
 async def load_all_cogs():
