@@ -62,7 +62,7 @@ class GameCog(commands.Cog):
         # Get bot response
         bot_response_instruction = f"""
         You are given the following prompt: \"{game.prompt}\"
-        How do you make yourself look as good as possible in front of others in this situation? Do not roleplay. Your response should only contain your specific actions.
+        How do you make yourself look as good as possible in front of others in this situation? Do not roleplay. Your response should only contain your specific actions. Feel free to be creative.
         Respond in one paragraph without any formatting. Keep your response under 50 words.
         """
         bot_response_instruction = inspect.cleandoc(bot_response_instruction)
@@ -99,13 +99,13 @@ class GameCog(commands.Cog):
 
         Player 2: {game.bot_response}
         """
+        query = inspect.cleandoc(query)
         
         chat_response = client.chat.complete(
             model=model,
             messages = [
                 {"role": "system", "content": judge_instruction},
                 {"role": "user", "content": query},
-                # {"role": "assistant", "content": prefix, "prefix": True},
             ]
         )
 
@@ -118,9 +118,18 @@ class GameCog(commands.Cog):
         await interaction.followup.send(embed=embed)
         
         # Update score
+        if judge_response.startswith("Player 1"):   # type: ignore
+            game.player_score += 1
+        elif judge_response.startswith("Player 2"): # type: ignore
+            game.bot_score += 1
+        else:
+            raise Exception("AI judge returned non-standard response")
         
         # Display score
-        
+        embed = discord.Embed(title="Current score", colour=discord.Colour.blurple())
+        embed.add_field(name="You (Player 1)", value=game.player_score)
+        embed.add_field(name="AI (Player 2)", value=game.bot_score)
+        await interaction.followup.send(embed=embed)
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(GameCog(bot))
