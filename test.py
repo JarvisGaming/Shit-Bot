@@ -1,3 +1,4 @@
+import inspect
 import os
 import time
 
@@ -15,6 +16,7 @@ client = Mistral(api_key=api_key)
 prompt_creation_instruction = """
 Create a scenario where the player is expected to show compassion / help others. Your response should only contain the prompt. Keep it under 30 words. End the prompt with the exact words \"What do you do?\".
 """
+prompt_creation_instruction = inspect.cleandoc(prompt_creation_instruction)
 
 chat_response = client.chat.complete(
     model=model,
@@ -37,6 +39,7 @@ You are given the following prompt: \"{prompt}\"
 How do you make yourself look as good as possible in front of others in this situation? Do not roleplay. Your response should only contain your specific actions.
 Respond in one paragraph without any formatting. Keep your response under 50 words.
 """
+bot_response_instruction = inspect.cleandoc(bot_response_instruction)
 
 chat_response = client.chat.complete(
     model=model,
@@ -58,6 +61,7 @@ Keep your response under 100 words.
 
 The scenario is: \"{prompt}\"
 """
+judge_instruction = inspect.cleandoc(judge_instruction)
 
 # prefix = ""
 
