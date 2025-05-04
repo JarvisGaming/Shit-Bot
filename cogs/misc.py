@@ -14,6 +14,13 @@ class MiscCog(commands.Cog):
     async def ask_bot(self, interaction: discord.Interaction, query: str):
         await interaction.response.defer()
         bot_response = get_bot_response(query)
+        
+        # Sometimes the bot likes going off the rails
+        MESSAGE_LENGTH_LIMIT = 2000
+        if len(bot_response) > MESSAGE_LENGTH_LIMIT:
+            bot_response = bot_response[:1996]
+            bot_response += "..."
+            
         await interaction.followup.send(content=bot_response)
 
 async def setup(bot: commands.Bot):
