@@ -1,5 +1,4 @@
 import asyncio
-from pprint import pprint
 
 import discord
 from discord import app_commands
@@ -15,35 +14,32 @@ class GameCog(commands.Cog):
     
     @app_commands.command(name="start_game", description="Start the game!")
     @app_commands.describe(first_to="How many points one needs to reach to win")
-    async def start_game(self, interaction: discord.Interaction, first_to: int):
-        embed = discord.Embed(title=f"How To Play", colour=discord.Colour.blurple())
-        text = """
-        how to play msg
-        """
-        embed.add_field(name='', value=text)
-        
-        await interaction.response.send_message(embed=embed)
-        await asyncio.sleep(5)
-        
-        prompt = await self.get_and_display_prompt(interaction)
-        
+    @app_commands.describe(gamemode="Different versions of the game")
+    @app_commands.choices(mode=[
+        app_commands.Choice(name="Nice Mode", value=False),
+        app_commands.Choice(name="Evil Mode", value=True),
+    ])
+    async def start_game(self, interaction: discord.Interaction, first_to: int, gamemode: app_commands.Choice[str]):
         # Create game
         discord_id = interaction.user.id
-        game = Game(discord_id=discord_id, points_to_win=first_to, prompt=prompt) # type: ignore
+        game = Game(discord_id=discord_id, points_to_win=first_to, evil_mode=gamemode.value) # type: ignore
         games[discord_id] = game
+        
+        # Send how to play message
+        embed = discord.Embed(title=f"How To Play", colour=discord.Colour.blurple())
+        text = """
+        Given a scenario, you're tasked with trying to be the most helpful person you can.
+        But, the AI will try to do the same thing!
+        A judge will look at you and the AI's response, and determine who was the most effective at helping.
+        Can you be more helpful than the AI?
+        """
+        embed.add_field(name='', value=text)
+        await interaction.response.send_message(embed=embed)
+        
+        # Set prompt
+        prompt = await self.get_and_display_prompt(interaction, game)
+        game.prompt = prompt
 
-    async def get_and_display_prompt(self, interaction: discord.Interaction):
-        # Generate prompt
-        prompt_creation_instruction = "Create a scenario where the player is expected to help someone. Be creative, though it doesn't necessarily have to be a fantasy setting. Your response should only contain the prompt. Keep it around 30 words. End the prompt with the exact words \"What do you do?\"."
-        prompt = get_bot_response(prompt_creation_instruction)
-
-        # Send second msg
-        embed = discord.Embed(title=f"The scenario is...", colour=discord.Colour.blurple())
-        embed.add_field(name='', value=prompt, inline=False)
-        embed.add_field(name='', value="Use `/send_response` to answer! Try to keep your response under 50 words.", inline=False)
-        await interaction.followup.send(embed=embed)
-        return prompt
-    
     @app_commands.command(name="send_response", description="Send your response to a prompt!")
     async def send_response(self, interaction: discord.Interaction, player_response: str):
         
@@ -69,34 +65,35 @@ class GameCog(commands.Cog):
             return
         
         # Get another prompt
-        prompt = await self.get_and_display_prompt(interaction)
+        prompt = await self.get_and_display_prompt(interaction, game)
         
         # Update game state
         game.prompt = prompt
     
-    async def end_game(self, interaction: discord.Interaction, game: Game):
-        embed = discord.Embed(title=f"Game over!", colour=discord.Colour.blurple())
-        if game.player_score > game.bot_score:
-            embed.add_field(name="", value="You won!")
-        else:
-            embed.add_field(name="", value="The AI won!")
-        await interaction.followup.send(embed=embed)
-        
-        # Remove game
-        del games[interaction.user.id]
+    async def get_and_display_prompt(self, interaction: discord.Interaction, game: Game):
+        # Generate prompt
+        prompt_creation_instruction = "Create a scenario where the player is expected to help someone. Be creative, though it doesn't necessarily have to be a fantasy setting. Your response should only contain the prompt. Keep it around 30 words. End the prompt with the exact words \"What do you do?\"."
+        prompt = get_bot_response(prompt_creation_instruction)
 
-    async def update_and_display_score(self, interaction: discord.Interaction, game: Game, judge_response: str):
-        if judge_response.startswith("Player 1"):   # type: ignore
-            game.player_score += 1
-        elif judge_response.startswith("Player 2"): # type: ignore
-            game.bot_score += 1
-        else:
-            raise Exception("AI judge returned non-standard response")
+        # Send second msg
+        embed = discord.Embed(title=f"The scenario is...", colour=discord.Colour.blurple())
+        embed.add_field(name='', value=prompt, inline=False)
+        embed.add_field(name='', value="Use `/send_response` to answer! Try to keep your response under 50 words.", inline=False)
+        await interaction.followup.send(embed=embed)
+        return prompt
+    
+    async def get_and_display_responses(self, interaction: discord.Interaction, game: Game):
+        bot_response_instruction = f"""
+        You are given the following scenario: \"{game.prompt}\"
+        Try to do the actions that would be most effective in helping others in this scenario.
+        Respond in one paragraph without any formatting. Respond in first person. Keep your response under 50 words. Respond in 5 seconds.
+        """
+        game.bot_response = get_bot_response(bot_response_instruction)
         
-        # Display score
-        embed = discord.Embed(title=f"Current score (First to {game.points_to_win})", colour=discord.Colour.blurple())
-        embed.add_field(name="You (Player 1)", value=game.player_score)
-        embed.add_field(name="AI (Player 2)", value=game.bot_score)
+        # Display both responses
+        embed = discord.Embed(title='', colour=discord.Colour.blurple())
+        embed.add_field(name="Your response (Player 1)", value=game.player_response, inline=False)
+        embed.add_field(name="AI's response (Player 2)", value=game.bot_response, inline=False)
         await interaction.followup.send(embed=embed)
 
     async def get_and_display_judge_response(self, interaction: discord.Interaction, game: Game):
@@ -115,20 +112,31 @@ class GameCog(commands.Cog):
         embed.add_field(name='', value=judge_response)
         await interaction.followup.send(embed=embed)
         return judge_response
-
-    async def get_and_display_responses(self, interaction: discord.Interaction, game: Game):
-        bot_response_instruction = f"""
-        You are given the following scenario: \"{game.prompt}\"
-        Try to do the actions that would be most effective in helping others in this scenario.
-        Respond in one paragraph without any formatting. Respond in first person. Keep your response under 50 words. Respond in 5 seconds.
-        """
-        game.bot_response = get_bot_response(bot_response_instruction)
+    
+    async def update_and_display_score(self, interaction: discord.Interaction, game: Game, judge_response: str):
+        if judge_response.startswith("Player 1"):   # type: ignore
+            game.player_score += 1
+        elif judge_response.startswith("Player 2"): # type: ignore
+            game.bot_score += 1
+        else:
+            raise Exception("AI judge returned non-standard response")
         
-        # Display both responses
-        embed = discord.Embed(title='', colour=discord.Colour.blurple())
-        embed.add_field(name="Your response (Player 1)", value=game.player_response, inline=False)
-        embed.add_field(name="AI's response (Player 2)", value=game.bot_response, inline=False)
+        # Display score
+        embed = discord.Embed(title=f"Current score (First to {game.points_to_win})", colour=discord.Colour.blurple())
+        embed.add_field(name="You (Player 1)", value=game.player_score)
+        embed.add_field(name="AI (Player 2)", value=game.bot_score)
         await interaction.followup.send(embed=embed)
+    
+    async def end_game(self, interaction: discord.Interaction, game: Game):
+        embed = discord.Embed(title=f"Game over!", colour=discord.Colour.blurple())
+        if game.player_score > game.bot_score:
+            embed.add_field(name="", value="You won!")
+        else:
+            embed.add_field(name="", value="The AI won!")
+        await interaction.followup.send(embed=embed)
+        
+        # Remove game
+        del games[interaction.user.id]
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(GameCog(bot))
