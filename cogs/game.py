@@ -29,7 +29,7 @@ class GameCog(commands.Cog):
         
         # Create game
         discord_id = interaction.user.id
-        game = Game(discord_id=discord_id, first_to=3, prompt=prompt) # type: ignore
+        game = Game(discord_id=discord_id, points_to_win=first_to, prompt=prompt) # type: ignore
         games[discord_id] = game
 
     async def get_and_display_prompt(self, interaction: discord.Interaction):
@@ -94,7 +94,7 @@ class GameCog(commands.Cog):
             raise Exception("AI judge returned non-standard response")
         
         # Display score
-        embed = discord.Embed(title="Current score", colour=discord.Colour.blurple())
+        embed = discord.Embed(title=f"Current score (First to {game.points_to_win})", colour=discord.Colour.blurple())
         embed.add_field(name="You (Player 1)", value=game.player_score)
         embed.add_field(name="AI (Player 2)", value=game.bot_score)
         await interaction.followup.send(embed=embed)
