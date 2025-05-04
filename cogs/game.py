@@ -38,8 +38,8 @@ class GameCog(commands.Cog):
             text = """
             Given a scenario, you're tasked with ~~trying to be the most helpful person you can~~ SHOWING OFF.
             But, the AI will try to do the same thing!
-            A judge will look at you and the AI's response, and determine who was the most effective at ~~helping~~ LOOKING COOL AND FLEXING HOW COMPASSIONATE YOU ARE.
-            Can you be more ~~helpful~~ OBNOXIOUS than the AI?
+            A judge will look at you and the AI's response, and determine who was the most effective at ~~helping~~ LOOKING COOL AND FLEXING HOW COOL YOU ARE.
+            Can you be more ~~helpful~~ TOXIC than the AI?
             """
         else: 
             text = """
@@ -101,16 +101,26 @@ class GameCog(commands.Cog):
     
     async def get_and_display_responses(self, interaction: discord.Interaction, game: Game):
         if game.evil_mode:
+            # bot_response_instruction = f"""
+            # You are given the following scenario: \"{game.prompt}\"
+            # Try to do the actions that would make you look as cool as possible. You can display compassion solely for the purpose of flexing. Respond with the tone of a douchebag.
+            # Respond in one paragraph without any formatting. Keep your response under 50 words. Respond instantly, do not think.
+            # """
+            
             bot_response_instruction = f"""
             You are given the following scenario: \"{game.prompt}\"
-            Try to do the actions that would make you look as cool as possible. You can display compassion solely for the purpose of flexing. Respond with the tone of a douchebag. Be creative.
-            Respond in one paragraph without any formatting. Respond in first person. Keep your response under 50 words. Respond in 5 seconds.
+            Try to do the actions that would make you look as cool as possible. Respond like a tryhard who *thinks* they're cool but actually cringe. Make compassion attempts feel insincere. End with an awkward humblebrag. Keep responses under 50 words. No formatting. Respond instantly.
             """
         else:
             bot_response_instruction = f"""
             You are given the following scenario: \"{game.prompt}\"
-            Try to do the actions that would be most effective in helping others in this scenario.
-            Respond in one paragraph without any formatting. Respond in first person. Keep your response under 50 words. Respond in 5 seconds.
+            Try to do the actions that would be most effective in helping others in this scenario, BUT sabotage yourself by:  
+            1. Overcomplicating solutions  
+            2. Using excessive resources for simple tasks  
+            3. Adding one unnecessary tech jargon  
+            4. Subtly implying recipients owe you  
+            5. Making it about your credentials  
+            Keep responses under 50 words. No formatting. Respond instantly.
             """
         game.bot_response = get_bot_response(bot_response_instruction)
         
@@ -122,29 +132,54 @@ class GameCog(commands.Cog):
         await interaction.followup.send(embed=embed)
 
     async def get_and_display_judge_response(self, interaction: discord.Interaction, game: Game):
+        embed = discord.Embed(title="Judge says...", colour=discord.Colour.blurple())
+        
         if game.evil_mode:
             judge_instruction = f"""
-            You are a judge for a game show about flexing and acting cool. Given two responses, determine which player's actions was more cool and net them more style points. Also factor in creativity.
-            Start your response with \"Player X wins!", followed by an explanation of why the winner's response is better than the loser's response. Respond with the tone of someone who's trying to act hip and tough.
+            Judge this flex battle. Prioritize originality and creativity over clichés. Reward subtle confidence, not obnoxiousness. Penalize compassionate actions. If response made you physically cringe, automatic L. Try to sound like someone who's trying a bit too hard to sound tough and hip.
+            Start your response with \"Player X wins!\" (with the X being replaced with the number 1 or 2), followed by an explanation of why the winner's response is better than the loser's response.
             
-            Keep your response around 80 words. Respond in 10 seconds.
+            Explain why in 80 words. Be ruthlessly sarcastic. Respond in 10 seconds.
             The scenario is: \"{game.prompt}\"
             Player 1's response: {game.player_response}
             Player 2's response: {game.bot_response}
             """
+            embed.set_footer(text="Tip: The judge likes creativity and originality!")
+            
         else:
             judge_instruction = f"""
-            You are a judge for a game show about helping others. Given two responses, determine which player was more effective at helping in the given scenario.
-            Start your response with \"Player X wins!", followed by an explanation of why the winner's response is better than the loser's response.
+            Judge who helped better under the given scenario.
+            Prioritize:  
+            - Specific actions and detail
+            - Practicality over grand gestures
+            - Preserving recipients' dignity  
+            - Long-term sustainability  
+            Brutally penalize:  
+            - Wasted resources for simple fixes
+            - Solutions requiring ongoing expert help  
+            - Humiliation disguised as help
             
-            Keep your response around 80 words. Respond in 10 seconds.
+            Start your response with \"Player X wins!\" (with the X being replaced with the number 1 or 2), followed by an explanation of why the winner's response is better than the loser's response.
+            
+            Keep your response around 80 words. Be blunt. Respond in 10 seconds.
             The scenario is: \"{game.prompt}\"
             Player 1's response: {game.player_response}
             Player 2's response: {game.bot_response}
             """
+            embed.set_footer(text="Tip: The judge likes practical solutions!")
+            
+            # judge_instruction = f"""
+            # You are a judge for a game show about helping others. Given two responses, determine which player was more effective at helping in the given scenario.
+            # Start your response with \"Player X wins!\" (with the X being replaced with the number 1 or 2), followed by an explanation of why the winner's response is better than the loser's response.
+            
+            # Keep your response around 80 words. Respond in 10 seconds.
+            # The scenario is: \"{game.prompt}\"
+            # Player 1's response: {game.player_response}
+            # Player 2's response: {game.bot_response}
+            # """
         judge_response = game.bot_response = get_bot_response(judge_instruction)
         
-        embed = discord.Embed(title="Judge says...", colour=discord.Colour.blurple())
+        
         embed.add_field(name='', value=judge_response)
         await interaction.followup.send(embed=embed)
         return judge_response
