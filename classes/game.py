@@ -15,3 +15,6 @@ class Game:
         self.prompt = prompt
         self.player_response = ""
         self.bot_response = ""
+    
+    def has_winner(self) -> bool:
+        return max(self.player_score, self.bot_score) >= self.points_to_win

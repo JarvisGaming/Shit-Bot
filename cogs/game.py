@@ -14,7 +14,8 @@ class GameCog(commands.Cog):
         self.bot = bot
     
     @app_commands.command(name="start_game", description="Start the game!")
-    async def start_game(self, interaction: discord.Interaction):
+    @app_commands.describe(first_to="How many points one needs to reach to win")
+    async def start_game(self, interaction: discord.Interaction, first_to: int):
         embed = discord.Embed(title=f"How To Play", colour=discord.Colour.blurple())
         text = """
         how to play msg
@@ -24,10 +25,16 @@ class GameCog(commands.Cog):
         await interaction.response.send_message(embed=embed)
         await asyncio.sleep(5)
         
+        prompt = await self.get_and_display_prompt(interaction)
+        
+        # Create game
+        discord_id = interaction.user.id
+        game = Game(discord_id=discord_id, first_to=3, prompt=prompt) # type: ignore
+        games[discord_id] = game
+
+    async def get_and_display_prompt(self, interaction: discord.Interaction):
         # Generate prompt
-        prompt_creation_instruction = """
-        Create a scenario where the player is expected to show compassion / help others. Your response should only contain the prompt. Keep it around 30 words. End the prompt with the exact words \"What do you do?\".
-        """
+        prompt_creation_instruction = "Create a scenario where the player is expected to help someone. Be creative, though it doesn't necessarily have to be a fantasy setting. Your response should only contain the prompt. Keep it around 30 words. End the prompt with the exact words \"What do you do?\"."
         prompt = get_bot_response(prompt_creation_instruction)
 
         # Send second msg
@@ -35,11 +42,7 @@ class GameCog(commands.Cog):
         embed.add_field(name='', value=prompt, inline=False)
         embed.add_field(name='', value="Use `/send_response` to answer! Try to keep your response under 50 words.", inline=False)
         await interaction.followup.send(embed=embed)
-        
-        # Create game
-        discord_id = interaction.user.id
-        game = Game(discord_id=discord_id, points_to_win=3, prompt=prompt) # type: ignore
-        games[discord_id] = game
+        return prompt
     
     @app_commands.command(name="send_response", description="Send your response to a prompt!")
     async def send_response(self, interaction: discord.Interaction, player_response: str):
@@ -52,39 +55,37 @@ class GameCog(commands.Cog):
         game.player_response = player_response
         
         # Get bot response
-        bot_response_instruction = f"""
-        You are given the following prompt: \"{game.prompt}\"
-        How do you make yourself look as good as possible in front of others in this situation? Do not roleplay. Your response should only contain your specific actions. Feel free to be creative.
-        Respond in one paragraph without any formatting. Keep your response under 50 words.
-        """
-        game.bot_response = get_bot_response(bot_response_instruction)
-        
-        # Display both responses
-        embed = discord.Embed(title='', colour=discord.Colour.blurple())
-        embed.add_field(name="Your response (Player 1)", value=game.player_response, inline=False)
-        embed.add_field(name="AI's response (Player 2)", value=game.bot_response, inline=False)
-        await interaction.followup.send(embed=embed)
+        await self.get_and_display_responses(interaction, game)
         
         # Judge response
-        await asyncio.sleep(3)
-        judge_instruction = f"""
-        You are a judge for a game show about showing compassion and helping others. Given two responses, determine which player did better in the given scenario.
-        Format your response as follows: \"Player X wins! [EXPLANATION FOR WHY PLAYER 1'S RESPONSE IS BETTER] [EXPLANATION FOR WHY PLAYER 2'S RESPONSE IS NOT AS GOOD]\"
-        Keep your response under 100 words.
-
-        The scenario is: \"{game.prompt}\"
-        
-        Player 1's response: {game.player_response}
-
-        Player 2's response: {game.bot_response}
-        """
-        judge_response = game.bot_response = get_bot_response(judge_instruction)
-        
-        embed = discord.Embed(title="Judge says...", colour=discord.Colour.blurple())
-        embed.add_field(name='', value=judge_response)
-        await interaction.followup.send(embed=embed)
+        judge_response = await self.get_and_display_judge_response(interaction, game)
         
         # Update score
+        await self.update_and_display_score(interaction, game, judge_response)
+        
+        # Check if game is over yet
+        if game.has_winner():
+            await self.end_game(interaction, game)
+            return
+        
+        # Get another prompt
+        prompt = await self.get_and_display_prompt(interaction)
+        
+        # Update game state
+        game.prompt = prompt
+    
+    async def end_game(self, interaction: discord.Interaction, game: Game):
+        embed = discord.Embed(title=f"Game over!", colour=discord.Colour.blurple())
+        if game.player_score > game.bot_score:
+            embed.add_field(name="", value="You won!")
+        else:
+            embed.add_field(name="", value="The AI won!")
+        await interaction.followup.send(embed=embed)
+        
+        # Remove game
+        del games[interaction.user.id]
+
+    async def update_and_display_score(self, interaction: discord.Interaction, game: Game, judge_response: str):
         if judge_response.startswith("Player 1"):   # type: ignore
             game.player_score += 1
         elif judge_response.startswith("Player 2"): # type: ignore
@@ -96,6 +97,37 @@ class GameCog(commands.Cog):
         embed = discord.Embed(title="Current score", colour=discord.Colour.blurple())
         embed.add_field(name="You (Player 1)", value=game.player_score)
         embed.add_field(name="AI (Player 2)", value=game.bot_score)
+        await interaction.followup.send(embed=embed)
+
+    async def get_and_display_judge_response(self, interaction: discord.Interaction, game: Game):
+        judge_instruction = f"""
+        You are a judge for a game show about helping others. Given two responses, determine which player was more effective at helping in the given scenario.
+        Start your response with \"Player X wins!", followed by an explanation of why the winner's response is better than the loser's response.
+        
+        Keep your response around 80 words. Respond in 10 seconds.
+        The scenario is: \"{game.prompt}\"
+        Player 1's response: {game.player_response}
+        Player 2's response: {game.bot_response}
+        """
+        judge_response = game.bot_response = get_bot_response(judge_instruction)
+        
+        embed = discord.Embed(title="Judge says...", colour=discord.Colour.blurple())
+        embed.add_field(name='', value=judge_response)
+        await interaction.followup.send(embed=embed)
+        return judge_response
+
+    async def get_and_display_responses(self, interaction: discord.Interaction, game: Game):
+        bot_response_instruction = f"""
+        You are given the following scenario: \"{game.prompt}\"
+        Try to do the actions that would be most effective in helping others in this scenario.
+        Respond in one paragraph without any formatting. Respond in first person. Keep your response under 50 words. Respond in 5 seconds.
+        """
+        game.bot_response = get_bot_response(bot_response_instruction)
+        
+        # Display both responses
+        embed = discord.Embed(title='', colour=discord.Colour.blurple())
+        embed.add_field(name="Your response (Player 1)", value=game.player_response, inline=False)
+        embed.add_field(name="AI's response (Player 2)", value=game.bot_response, inline=False)
         await interaction.followup.send(embed=embed)
 
 async def setup(bot: commands.Bot):

@@ -25,7 +25,7 @@ async def load_all_cogs():
 @bot.event
 async def on_ready():
     """Runs after setup_hook()."""
-    
+    print("Bot is now ready")
     await other.utility.send_in_all_channels("Bot is now ready")
 
 sys.stderr = open("./logs.log", "w")  # Redirect stderr to log file
