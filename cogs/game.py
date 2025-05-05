@@ -114,13 +114,8 @@ class GameCog(commands.Cog):
         else:
             bot_response_instruction = f"""
             You are given the following scenario: \"{game.prompt}\"
-            Try to do the actions that would be most effective in helping others in this scenario, BUT sabotage yourself by:  
-            1. Overcomplicating solutions  
-            2. Using excessive resources for simple tasks  
-            3. Adding one unnecessary tech jargon  
-            4. Subtly implying recipients owe you  
-            5. Making it about your credentials  
-            Keep responses under 50 words. No formatting. Respond instantly.
+            Try to do the actions that would be most effective in helping others in this scenario, BUT make your solution a bit less effective by using excessive resources for simple tasks and be vague. Don't make it too unrealistic. Your response should only contain your actions. Don't include words like "unecessarily" or "oversized".
+            Keep responses under 50 words in one paragraph. No formatting. Respond instantly.
             """
         game.bot_response = get_bot_response(bot_response_instruction)
         
@@ -136,7 +131,7 @@ class GameCog(commands.Cog):
         
         if game.evil_mode:
             judge_instruction = f"""
-            Judge this flex battle. Prioritize originality and creativity over clichés. Reward subtle confidence, not obnoxiousness. Penalize compassionate actions. If response made you physically cringe, automatic L. Try to sound like someone who's trying a bit too hard to sound tough and hip.
+            Judge this flex battle. Prioritize originality and creativity over clichés. Penalize compassionate actions. If response made you physically cringe, automatic L. Try to sound like someone who's trying a bit too hard to sound tough and hip.
             Start your response with \"Player X wins!\" (with the X being replaced with the number 1 or 2), followed by an explanation of why the winner's response is better than the loser's response.
             
             Explain why in 80 words. Be ruthlessly sarcastic. Respond in 10 seconds.
@@ -154,8 +149,8 @@ class GameCog(commands.Cog):
             - Practicality over grand gestures
             - Preserving recipients' dignity  
             - Long-term sustainability  
-            Brutally penalize:  
-            - Wasted resources for simple fixes
+            Penalize:  
+            - Excessive resources for simple fixes
             - Solutions requiring ongoing expert help  
             - Humiliation disguised as help
             
