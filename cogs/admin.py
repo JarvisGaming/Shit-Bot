@@ -3,20 +3,12 @@ import asyncio
 from discord.ext import commands
 
 import other.utility
-from classes.pagination import PaginationView
 from other.global_constants import *
 
 
 class AdminCog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-    
-    @commands.command()
-    @commands.is_owner()
-    async def pagination(self, ctx: commands.Context):
-        data = list(range(1, 25))
-        pagination = PaginationView(data=data)
-        await pagination.send(ctx)
     
     @commands.command()
     @commands.is_owner()

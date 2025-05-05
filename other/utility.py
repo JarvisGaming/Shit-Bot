@@ -13,14 +13,6 @@ async def send_in_all_channels(message: str):
 def get_bot_response(instruction: str) -> str:
     instruction = inspect.cleandoc(instruction)
     
-    # response = client.chat.complete(
-    #     model=model,
-    #     temperature=1.0,
-    #     messages = [
-    #         {"role": "system", "content": instruction},
-    #     ]
-    # )
-    
     response = client.chat.completions.create(
         model=model,
         top_p=0.5,
