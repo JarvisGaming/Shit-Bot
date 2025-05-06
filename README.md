@@ -7,7 +7,7 @@ Currently running in [this discord server](https://discord.gg/qNfCMBgCCW), in ca
 ## Demo video
 [![Watch the video](https://img.youtube.com/vi/bQcXch3zvlo/default.jpg)](https://youtu.be/bQcXch3zvlo)
 
-\* Sound effects not included in product.
+_\* Sound effects not included in product._
 
 ## How to run
 1. Create an application on the [Discord Developer Portal](https://discord.com/developers/applications), give it sufficient permissions (eg View Channels, Manage Messages) and turn on all Privileged Gateway Intents.
