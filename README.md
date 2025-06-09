@@ -2,7 +2,6 @@
 _giving three shits is better than two_
 
 An interactive AI Discord bot written in Python. Provides a game where users try to "one-up" the AI in different scenarios. See demo video for more information.
-Currently running in [this discord server](https://discord.gg/qNfCMBgCCW), in case you want to try it out without the hassle of setting it up.
 
 ## Demo video
 [![Watch the video](https://img.youtube.com/vi/bQcXch3zvlo/default.jpg)](https://youtu.be/bQcXch3zvlo)
